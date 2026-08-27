@@ -112,7 +112,7 @@ pub async fn worker(db: Database, docs: Vec<Vec<String>>) -> Result<(), Box<dyn 
     for i in docs {
         let doc = json!({"_id":i[0],"_rev":i[1]});
         println!("{0}/{1} - {2}", total, c, i[0]);
-        db.remove(&doc).await;
+        let _ = db.remove(&doc).await;
         c -= 1;
     }
     Ok(())
@@ -148,7 +148,6 @@ pub async fn delete_by_key(config: &AppConfig, args: Args) -> Result<(), Box<dyn
     let r = db.find_batched(find, tx, 5000, 0).await;
     println!("ret: {:?}", r);
 
-    let mut c = 0;
     let db2 = client.db(&args.db).await?;
     let mut chunks: Vec<Vec<Vec<String>>> = Vec::new();
 
@@ -172,13 +171,11 @@ pub async fn delete_by_key(config: &AppConfig, args: Args) -> Result<(), Box<dyn
     }
 
     let mut futures = vec![worker(db2.clone(), chunks[0].clone())];
-    c = 0;
-    for i in chunks {
-        if c > 0 {
-            let t = worker(db2.clone(), i);
+    for (i, chunk) in chunks.into_iter().enumerate() {
+        if i > 0 {
+            let t = worker(db2.clone(), chunk);
             futures.push(t);
         }
-        c += 1;
     }
     join_all(futures).await;
     println!("....finished");

@@ -15,7 +15,7 @@ pub struct Args {
     pub delete: String,
     #[arg(short, long, default_value = "")]
     pub migrate: String,
-    #[arg(short = 'm', long, default_value = "")]
+    #[arg(short = 'y', long, default_value = "")]
     pub key: String,
     #[arg(short = 'k', long, default_value = "")]
     pub value: String,
@@ -102,8 +102,9 @@ impl Default for AppConfig {
 
 fn load_or_initialize() -> Result<AppConfig, ConfigError> {
     let home = my_home()
-        .ok_or_else(|| ConfigError::IoError(io::Error::new(io::ErrorKind::NotFound, "Cannot determine home directory")))?
-        .ok_or_else(|| ConfigError::IoError(io::Error::new(io::ErrorKind::NotFound, "Home directory is None")))?;
+        .ok()
+        .flatten()
+        .ok_or_else(|| ConfigError::IoError(io::Error::new(io::ErrorKind::NotFound, "Cannot determine home directory")))?;
     let config_path = home.join("config.toml");
     if config_path.exists() {
         let content = fs::read_to_string(&config_path)?;

@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use couch_rs::Client;
 use serde_json::{json, Value};
 use sqlx::mysql::MySqlPoolOptions;
-use sqlx::Row;
+use sqlx::{Column, Row};
 use std::error::Error;
 
 pub async fn migrate_table(config: &AppConfig, table: &str, query: &str) -> Result<(), Box<dyn Error>> {
@@ -18,7 +18,7 @@ pub async fn migrate_table(config: &AppConfig, table: &str, query: &str) -> Resu
         .await?;
 
     println!("Running query on table: {}", table);
-    let rows = sqlx::query(query)
+    let rows = sqlx::query(sqlx::AssertSqlSafe(query))
         .fetch_all(&pool)
         .await?;
 
@@ -70,7 +70,8 @@ pub async fn migrate_table(config: &AppConfig, table: &str, query: &str) -> Resu
     let mut failed = 0;
 
     for doc in &docs {
-        match db.post(doc).await {
+        let mut doc = doc.clone();
+        match db.create(&mut doc).await {
             Ok(_) => success += 1,
             Err(e) => {
                 failed += 1;
@@ -98,7 +99,7 @@ pub async fn migrate_query(config: &AppConfig, query: &str, target_db: &str) -> 
         .await?;
 
     println!("Running custom query");
-    let rows = sqlx::query(query)
+    let rows = sqlx::query(sqlx::AssertSqlSafe(query))
         .fetch_all(&pool)
         .await?;
 
@@ -147,7 +148,8 @@ pub async fn migrate_query(config: &AppConfig, query: &str, target_db: &str) -> 
     let mut failed = 0;
 
     for doc in &docs {
-        match db.post(doc).await {
+        let mut doc = doc.clone();
+        match db.create(&mut doc).await {
             Ok(_) => success += 1,
             Err(e) => {
                 failed += 1;
