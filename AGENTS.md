@@ -58,16 +58,16 @@ cargo build --release
 - "Check public access" runs the per-database public check separately.
 
 ## Workflows
-- `.github/workflows/control.yml` is the single entry point. It runs on pushes to
-  `main`, any tag, and the **Run workflow** button.
-- The `jobs:` block is a one-line-per-build list. All eight builds are listed; comment
-  out a line with `#` to disable it, remove the `#` to enable it. Currently enabled:
-  `pages` only.
-- Every leaf workflow is `workflow_call` + `workflow_dispatch` only. The
-  `github.repository_owner == 'myridia'` guard lives only in `control.yml`, so leaf
-  workflows can also be dispatched directly. `control.yml` grants `pages: write` /
-  `id-token: write` so the `pages` target can deploy.
-- `msix` downloads `couchy.exe` from the `veto8/couchy` `main` release.
+- `.github/workflows/control.yml` is the single entry point, modelled on `github/ct`.
+  It runs on pushes to `main`, any tag, and manual dispatch with a `target` choice
+  (`all`, `linux`, `debian`, `windows`, `macos`, `macos_intel`, `msix`, `freebsd`, `pages`).
+- Every job is gated by `github.repository_owner == 'myridia'` plus the `target`
+  choice; on a push all jobs run. The guard lives only in `control.yml`, so leaf
+  workflows can also be dispatched directly.
+- Every leaf workflow is `workflow_call` + `workflow_dispatch` only. `control.yml`
+  grants `pages: write` / `id-token: write` so the `pages` target can deploy.
+- `msix` needs `windows` but uses `if: always()`, so it still runs when `windows` is
+  skipped; it downloads `couchy.exe` from the `veto8/couchy` `main` release.
 
 ## Conventions
 - No comments in code unless asked.
